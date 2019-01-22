@@ -1,0 +1,2 @@
+# start pigpiod
+sudo pigpiod
