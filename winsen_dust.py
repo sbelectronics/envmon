@@ -123,8 +123,26 @@ class WinsenDust(threading.Thread):
         finally:
             self.pi.bb_serial_read_close(self.dust_device_tx)                
 
+def stress(pi):
+    # pretend the CO2 and CH20 sensors also exist
+    pi.set_mode(23, pigpio.INPUT)
+    pi.set_mode(6, pigpio.INPUT)
+    try:
+        pi.bb_serial_read_close(23)
+    except:
+        pass
+    try:
+        pi.bb_serial_read_close(6)
+    except:
+        pass
+    pi.bb_serial_read_open(23, 9600)
+    pi.bb_serial_read_open(6, 9600)
+    
+            
 def main():
     pi = pigpio.pi()
+    stress(pi)
+    
     dust = WinsenDust(pi)
     dust.start()
 
