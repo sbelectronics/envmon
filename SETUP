@@ -10,6 +10,8 @@ sudo make install
 # install adafruit bme680 library
 sudo pip install bme680
 
+sudo apt-get install rrdtool
+
 # install python-rrdtool
 sudo apt-get install librrd-dev
 sudo pip install python-rrdtool

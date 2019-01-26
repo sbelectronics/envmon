@@ -29,7 +29,7 @@ class WinsenDust(threading.Thread):
         
     def handle_packet(self):
         if self.check!=self.calc_check:
-            print "mismatch:", self.check, self.calc_check
+            print "dust mismatch:", self.check, self.calc_check
         else:
             self.handle_good_packet()
 

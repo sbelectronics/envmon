@@ -1,8 +1,11 @@
+import cPickle
 import os
+import socket
 import time
 
 class Reporter_Base(object):
-    def __init__(self, station="envmon"):
+    def __init__(self, verbosity, station="envmon"):
+        self.verbosity=verbosity
         self.station = station
         self.current_result = {}
 
@@ -25,6 +28,13 @@ class Reporter_Print(Reporter_Base):
         print time.time()
         for (k, v) in self.current_result.items():
             print "  ", k, v
+
+""" Some simple rrdtool graphs:
+    rrdtool graph temp_graph1.png --start now-24h --end now -w 1024 -h 768 DEF:temp=envmon.rrd:temp:AVERAGE CDEF:tempf=9,5,/,temp,*,32,+ LINE1:tempf#FF0000:"Temperature"
+    rrdtool graph humid_graph1.png --start now-24h --end now -w 1024 -h 768 DEF:humid=envmon.rrd:humid:AVERAGE LINE1:humid#FF0000:"Humidity"
+    rrdtool graph co2_graph1.png --start now-24h --end now -w 1024 -h 768 DEF:co2_conc=envmon.rrd:co2_conc:AVERAGE LINE1:co2_conc#FF0000:"CO2"
+    rrdtool graph pm10_graph1.png --start now-24h --end now -w 1024 -h 768 DEF:pm10=envmon.rrd:pm10:MAX LINE1:pm10#FF0000:"pm10"
+"""
 
 class Reporter_RRD(Reporter_Base):
     def __init__(self, *args, **kwargs):
@@ -85,7 +95,8 @@ class Reporter_RRD(Reporter_Base):
             else:
                 rrd_expanded.append(line)
 
-        print rrd_expanded
+        if self.verbosity>=1:
+            print rrd_expanded
         self.rrdtool.create([self.filename] + rrd_expanded)
 
     def dump_result(self):
@@ -95,5 +106,25 @@ class Reporter_RRD(Reporter_Base):
                 update = update + ":%0.2f" % self.current_result[k]
             else:
                 update = update + ":U"
-        print update
+        if self.verbosity>=1:
+            print update
         self.rrdtool.update(self.filename, update)
+
+class Reporter_UDP(Reporter_Base):
+    def __init__(self, *args, **kwargs):
+        dest_addr = kwargs.pop("dest_addr")
+        super(Reporter_UDP, self).__init__(*args, **kwargs)
+
+        (dest_host, dest_port) = dest_addr.split(":")
+        self.dest_addr = (dest_host, int(dest_port))
+        
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    def dump_result(self):
+        message = {"station": self.station,
+                   "result": self.current_result}
+        if self.verbosity>=1:
+            print message
+        self.sock.sendto(cPickle.dumps(message), self.dest_addr)
+        
+        

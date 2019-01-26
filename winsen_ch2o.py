@@ -29,9 +29,10 @@ class WinsenCH2O(threading.Thread):
     def handle_packet(self):
         calc_check = (~self.calc_check) & 0xFF
         calc_check = calc_check + 1
+        calc_check = calc_check & 0xFF
 
         if self.check!=calc_check:
-            print "mismatch:", self.check, calc_check
+            print "ch2o mismatch:", self.check, calc_check
         else:
             self.handle_good_packet()
 
