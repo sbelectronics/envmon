@@ -33,6 +33,9 @@ class WinsenCH2O(threading.Thread):
         if self.check!=calc_check:
             print "mismatch:", self.check, calc_check
         else:
+            self.handle_good_packet()
+
+    def handle_good_packet(self):
             print "CH2O conc=%d, full_range=%d" % (self.conc, self.full_range)
 
     def process_byte(self, b):

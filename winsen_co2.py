@@ -43,6 +43,9 @@ class WinsenCO2(threading.Thread):
         if self.check!=calc_check:
             print "mismatch:", self.check, calc_check
         else:
+            self.handle_good_packet()
+
+    def handle_good_packet(self):
             print "CO2 conc=%d" % (self.conc,)
 
     def process_byte(self, b):

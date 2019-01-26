@@ -1,3 +1,4 @@
+# install pigpio
 rm -f pigpio.zip
 sudo rm -rf PIGPIO
 wget abyz.me.uk/rpi/pigpio/pigpio.zip
@@ -5,3 +6,17 @@ unzip pigpio.zip
 cd PIGPIO
 make
 sudo make install
+
+# install adafruit bme680 library
+sudo pip install bme680
+
+# install python-rrdtool
+sudo apt-get install librrd-dev
+sudo pip install python-rrdtool
+
+# incase the above didn't work
+sudo apt-get update
+sudo apt-get install git
+git clone https://github.com/commx/python-rrdtool.git
+cd python-rrdtool
+python ./setup.py install

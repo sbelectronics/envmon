@@ -31,6 +31,9 @@ class WinsenDust(threading.Thread):
         if self.check!=self.calc_check:
             print "mismatch:", self.check, self.calc_check
         else:
+            self.handle_good_packet()
+
+    def handle_good_packet(self):
             print "pm1.0=%d, pm2.5=%d, pm10=%d" % (self.pm1p0, self.pm2p5, self.pm10)
         
     def process_byte(self, b):
