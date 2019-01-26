@@ -26,7 +26,10 @@ class BME680_TempHumidBarom(threading.Thread):
         self.handle_good_packet()
 
     def handle_good_packet(self):
-        output = "{0:.2f} C,{1:.2f} hPa,{2:.2f} %RH".format(self.temperature, self.pressure, self.humidity)
+        if self.gas:
+            output = "{0:.2f} C,{1:.2f} hPa,{2:.2f} %RH, {3} Ohms".format(self.temperature, self.pressure, self.humidity, self.gas)
+        else:
+            output = "{0:.2f} C,{1:.2f} hPa,{2:.2f} %RH".format(self.temperature, self.pressure, self.humidity)
         print "BME", output
         
     def run(self):
@@ -35,6 +38,10 @@ class BME680_TempHumidBarom(threading.Thread):
                 self.temperature = self.sensor.data.temperature
                 self.pressure = self.sensor.data.pressure
                 self.humidity = self.sensor.data.humidity
+                if self.sensor.data.heat_stable:
+                    self.gas = self.sensor.data.gas_resistance
+                else:
+                    self.gas = None
                 self.handle_packet()
             time.sleep(10)
             

@@ -43,7 +43,10 @@ class ReportingBME680_TempHumidBarom(BME680_TempHumidBarom):
 
     def handle_good_packet(self):
         for reporter in self.reporters:
-            reporter.report("BME680", {"temp": self.temperature, "pres": self.pressure, "humid": self.humidity})
+            data = {"temp": self.temperature, "pres": self.pressure, "humid": self.humidity}
+            if self.gas:
+                data["gas"] = self.gas
+            reporter.report("BME680", data)
 
 
 def parse_args():

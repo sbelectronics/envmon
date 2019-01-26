@@ -72,7 +72,7 @@ class Reporter_RRD(Reporter_Base):
   DS:temp:GAUGE:{heartbeat}:-40:85
   DS:humid:GAUGE:{heartbeat}:10:90
   DS:pres:GAUGE:{heartbeat}:300:1100
-  DS:gas:GAUGE:{heartbeat}:0:500
+  DS:gas:GAUGE:{heartbeat}:0:500000
   DS:ch2o_conc:GAUGE:{heartbeat}:0:5000
   DS:ch2o_full_range:GAUGE:{heartbeat}:2000:5000
   DS:co2_conc:GAUGE:{heartbeat}:0:5000
