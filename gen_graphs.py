@@ -53,6 +53,8 @@ def gen_graph(station):
 
     html_24h_f = open(os.path.join(graph_dir, "24h.html"), "w")
     html_24h_f.write("<html><head></head><body>\n")
+    html_1h_f = open(os.path.join(graph_dir, "1h.html"), "w")
+    html_1h_f.write("<html><head></head><body>\n")
     html_30d_max_f = open(os.path.join(graph_dir, "30d_max.html"), "w")
     html_30d_max_f.write("<html><head></head><body>\n")
 
@@ -77,9 +79,22 @@ def gen_graph(station):
                  {transform}
                  LINE1:{mappedv}#FF0000:{name}""".format(**kwargs)
         cmd = split_args(cmd)
-        print cmd
         rrdtool.graph(*cmd)
         html_24h_f.write('<img src="{graph_base_fn}">\n'.format(**kwargs))
+
+        kwargs["graph_base_fn"] = k+"_1h.png"
+        kwargs["graph_fn"] = os.path.join(graph_dir, k+"_1h.png")
+        cmd = """{graph_fn}
+                 --start now-1h
+                 --end now 
+                 -w 1024 
+                 -h 400 
+                 DEF:{var}={rrd_fn}:{var}:MAX
+                 {transform}
+                 LINE1:{mappedv}#FF0000:{name}""".format(**kwargs)
+        cmd = split_args(cmd)
+        rrdtool.graph(*cmd)
+        html_1h_f.write('<img src="{graph_base_fn}">\n'.format(**kwargs))
 
         kwargs["graph_base_fn"] = k+"_30d_max.png"
         kwargs["graph_fn"] = os.path.join(graph_dir, k+"_30d_max.png")
@@ -96,6 +111,7 @@ def gen_graph(station):
         html_30d_max_f.write('<img src="{graph_base_fn}">\n'.format(**kwargs))
 
     html_24h_f.write("</body></html>\n")
+    html_1h_f.write("</body></html>\n")
     html_30d_max_f.write("</body></html>\n")
 
 
