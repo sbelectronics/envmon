@@ -49,6 +49,14 @@ class ReportingBME680_TempHumidBarom(BME680_TempHumidBarom):
                 data["gas"] = self.gas
             reporter.report("BME680", data)
 
+class ReportingFan(Fan):
+    def __init__(self, pi, reporters):
+        super(ReportingFan, self).__init__(pi)
+        self.reporters = reporters
+
+    def report(self, rpm):
+        for reporter in self.reporters:
+            reporter.report("fan", {"rpm": int(rpm)})
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -57,7 +65,8 @@ def parse_args():
             "udp": None,
             "console": False,
             "rrd": False,
-            "prometheus": None}
+            "prometheus": None,
+            "fan": 200}
 
     _help = 'Name of station (default: %s)' % defs['station']
     parser.add_argument(
@@ -87,6 +96,12 @@ def parse_args():
     parser.add_argument(
         '-P', '--prometheus', dest='prometheus', action='store', type=int,
         default=defs['prometheus'],
+        help=_help)
+
+    _help = 'Set fan PWM (default: %s)' % defs['fan']
+    parser.add_argument(
+        '-F', '--fan', dest='fan', action='store', type=int,
+        default=defs['fan'],
         help=_help)
 
     _help = "suppress debug and info logs"
@@ -129,8 +144,8 @@ def main():
         start_http_server(args.prometheus)
         reporters.append(Reporter_Prometheus(station=args.station, verbosity=verbosity))
 
-    fan = Fan(pi)
-    fan.set_pwm(200)
+    fan = ReportingFan(pi, reporters)
+    fan.set_pwm(args.fan)
 
     co2 = ReportingWinsenCO2(pi, reporters)
     co2.start()
