@@ -7,7 +7,8 @@ from winsen_ch2o import WinsenCH2O
 from winsen_co2 import WinsenCO2
 from winsen_dust import WinsenDust
 from bme680_thb import BME680_TempHumidBarom
-from reporter import Reporter_Print, Reporter_RRD, Reporter_UDP
+from reporter import Reporter_Print, Reporter_RRD, Reporter_UDP, Reporter_Prometheus
+from fan import Fan
 
 class ReportingWinsenCO2(WinsenCO2):
     def __init__(self, pi, reporters):
@@ -55,7 +56,8 @@ def parse_args():
     defs = {"station": "envmon",
             "udp": None,
             "console": False,
-            "rrd": False}
+            "rrd": False,
+            "prometheus": None}
 
     _help = 'Name of station (default: %s)' % defs['station']
     parser.add_argument(
@@ -79,6 +81,12 @@ def parse_args():
     parser.add_argument(
         '-R', '--rrd', dest='rrd', action='store_true',
         default=defs['rrd'],
+        help=_help)
+
+    _help = 'Report to Prometheus on port (default: %s)' % defs['rrd']
+    parser.add_argument(
+        '-P', '--prometheus', dest='prometheus', action='store', type=int,
+        default=defs['prometheus'],
         help=_help)
 
     _help = "suppress debug and info logs"
@@ -116,6 +124,13 @@ def main():
         reporters.append(Reporter_RRD(station=args.station, verbosity=verbosity))
     if args.udp:
         reporters.append(Reporter_UDP(station=args.station, dest_addr=args.udp, verbosity=verbosity))
+    if args.prometheus:
+        from prometheus_client import start_http_server
+        start_http_server(args.prometheus)
+        reporters.append(Reporter_Prometheus(station=args.station, verbosity=verbosity))
+
+    fan = Fan(pi)
+    fan.set_pwm(200)
 
     co2 = ReportingWinsenCO2(pi, reporters)
     co2.start()

@@ -126,5 +126,21 @@ class Reporter_UDP(Reporter_Base):
         if self.verbosity>=1:
             print message
         self.sock.sendto(cPickle.dumps(message), self.dest_addr)
-        
+
+class Reporter_Prometheus(Reporter_Base):
+    def __init__(self, *args, **kwargs):
+        super(Reporter_Prometheus, self).__init__(*args, **kwargs)
+
+        from prometheus_client import Gauge
+
+        self.Gauge = Gauge
+        self.gauges = {}
+
+    def dump_result(self):
+        remap = {"pm1.0": "pm1p0", "pm2.5": "pm2p5"}
+        for (k,v) in self.current_result.items():
+            if not k in self.gauges:
+                self.gauges[k] = self.Gauge(remap.get(k, k), k)
+            self.gauges[k].set(v)
+
         

@@ -17,7 +17,8 @@ def parse_args():
 
     defs = {"udp": None,
             "console": False,
-            "rrd": False}
+            "rrd": False,
+            "prometheus": None}
 
     _help = 'Report to UDP (default: %s)' % defs['udp']
     parser.add_argument(
@@ -35,6 +36,12 @@ def parse_args():
     parser.add_argument(
         '-R', '--rrd', dest='rrd', action='store_true',
         default=defs['rrd'],
+        help=_help)
+
+    _help = 'Report to Prometheus on port (default: %s)' % defs['rrd']
+    parser.add_argument(
+        '-P', '--prometheus', dest='prometheus', action='store', type=int,
+        default=defs['prometheus'],
         help=_help)
 
     _help = "suppress debug and info logs"
@@ -109,6 +116,9 @@ def main():
         reporters.append(("rrd", Reporter_RRD, {"verbosity": verbosity}))
     if args.udp:
         reporters.append(("udp", Reporter_UDP, {"verbosity": verbosity, "dest_addr": args.udp}))
+    if args.prometheus:
+        from prometheus_client import start_http_server
+        # TODO: finish me
 
     collector = UDPCollector(verbosity = verbosity, reporters = reporters)
     collector.start()
