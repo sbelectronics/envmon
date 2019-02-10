@@ -1,0 +1,10 @@
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-envmon
+  labels:
+     grafana_dashboard: "1"
+data:
+  kb8s.json: |
+{{ .Files.Get "dashboards/Environmental-Monitor-1549178378700.json" | indent 4 }}

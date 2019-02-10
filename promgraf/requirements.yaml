@@ -1,0 +1,8 @@
+dependencies:
+- name: prometheus
+  version: 6.8.1
+  repository: https://kubernetes-charts.storage.googleapis.com/
+- name: grafana
+  version: 1.12.0
+  repository: https://kubernetes-charts.storage.googleapis.com/
+
