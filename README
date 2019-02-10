@@ -1,2 +1,6 @@
-# start pigpiod
+# auto start
+sudo crontab -e
+    @reboot bash /home/pi/envmon/start_envmond.sh &> /dev/null   
+
+# start pigpiod (for development)
 sudo pigpiod -s 2
