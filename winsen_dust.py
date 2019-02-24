@@ -4,13 +4,15 @@ import time
 import threading
 
 DUST_DEVICE_TX=27
+DUST_DEVICE_RX=18
 
 class WinsenDust(threading.Thread):
-    def __init__(self, pi, dust_device_tx = DUST_DEVICE_TX):
+    def __init__(self, pi, dust_device_tx = DUST_DEVICE_TX, device_rx = DUST_DEVICE_RX):
         super(WinsenDust, self).__init__()
         self.daemon = True
         self.pi = pi
         self.dust_device_tx = dust_device_tx
+        self.device_rx = device_rx
         
         self.pi.set_mode(self.dust_device_tx, pigpio.INPUT)
 
@@ -26,6 +28,41 @@ class WinsenDust(threading.Thread):
         self.pm10 = 0
         self.calc_check = 0
         self.check = 0
+
+        self.qa_mode_wid = None
+        self.initiative_mode_wid = None
+
+    def setup_transmitter(self):
+        # Do this lazily since not everyone cares about switching modes.
+
+        # NOTE: Observed one time the sensor came up in QA mode and needed to be set to initiative mode for output
+        #   to start being sent. If this happens again, maybe we do need to worry about setting the mode.
+
+        if self.qa_mode_wid:
+            # already setup
+            return
+
+        self.pi.set_mode(self.device_rx, pigpio.OUTPUT)
+
+        request = (0xFF, 0x01, 0x78, 0x41, 0x00, 0x00, 0x00, 0x00, 0x46)
+        self.pi.wave_clear()
+        self.pi.wave_add_serial(self.device_rx, 9600, request, 0, 8, 2)
+        self.qa_mode_wid = self.pi.wave_create()
+
+        request = (0xFF, 0x01, 0x78, 0x40, 0x00, 0x00, 0x00, 0x00, 0x47)
+        self.pi.wave_clear()
+        self.pi.wave_add_serial(self.device_rx, 9600, request, 0, 8, 2)
+        self.initiative_mode_wid = self.pi.wave_create()
+
+    def set_qa_mode(self):
+        print "setting qa mode"
+        self.setup_transmitter()
+        self.pi.wave_send_once(self.qa_mode_wid)
+
+    def set_initiative_mode(self):
+        print "setting initiative mode"
+        self.setup_transmitter()
+        self.pi.wave_send_once(self.initiative_mode_wid)
         
     def handle_packet(self):
         if self.check!=self.calc_check:
@@ -148,6 +185,9 @@ def main():
     
     dust = WinsenDust(pi)
     dust.start()
+
+    if "initiative" in sys.argv:
+        dust.set_initiative_mode()
 
     while True:
         time.sleep(1)
