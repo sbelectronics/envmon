@@ -1,1 +1,0 @@
-sed -i -e 's/${DS_PROMETHEUS}/Prometheus/g' Environmental-Monitor-1549178378700.json
