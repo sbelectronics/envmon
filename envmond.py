@@ -2,6 +2,7 @@ import argparse
 import os
 import pigpio
 import time
+import traceback
 
 from winsen_ch2o import WinsenCH2O
 from winsen_co2 import WinsenCO2
@@ -10,53 +11,60 @@ from bme680_thb import BME680_TempHumidBarom
 from reporter import Reporter_Print, Reporter_RRD, Reporter_UDP, Reporter_Prometheus
 from fan import Fan
 
-class ReportingWinsenCO2(WinsenCO2):
-    def __init__(self, pi, reporters):
-        super(ReportingWinsenCO2, self).__init__(pi)
-        self.reporters = reporters
-
-    def handle_good_packet(self):
-        for reporter in self.reporters:
-            reporter.report("CO2", {"co2_conc": self.conc})
-
-class ReportingWinsenCH2O(WinsenCH2O):
-    def __init__(self, pi, reporters):
-        super(ReportingWinsenCH2O, self).__init__(pi)
-        self.reporters = reporters
-
-    def handle_good_packet(self):
-        for reporter in self.reporters:
-            reporter.report("CH2O", {"ch2o_conc": self.conc, "co2_full_range": self.full_range})
-
-class ReportingWinsenDust(WinsenDust):
-    def __init__(self, pi, reporters):
-        super(ReportingWinsenDust, self).__init__(pi)
-        self.reporters = reporters
-
-    def handle_good_packet(self):
-        for reporter in self.reporters:
-            reporter.report("DUST", {"pm1.0": self.pm1p0, "pm2.5": self.pm2p5, "pm10": self.pm10})
-
-class ReportingBME680_TempHumidBarom(BME680_TempHumidBarom):
+class ReportingMixIn(object):
     def __init__(self, reporters):
-        super(ReportingBME680_TempHumidBarom, self).__init__()
         self.reporters = reporters
+
+    def report(self, sensor, values):
+        for reporter in self.reporters:
+            try:
+                reporter.report(sensor, values)
+            except:
+                print "Exception while reporting on reporter %s" % reporter.__class__.__name__
+                traceback.print_exc()
+
+class ReportingWinsenCO2(WinsenCO2, ReportingMixIn):
+    def __init__(self, pi, reporters):
+        WinsenCO2.__init__(self, pi)
+        ReportingMixIn.__init__(self, reporters)
 
     def handle_good_packet(self):
-        for reporter in self.reporters:
-            data = {"temp": self.temperature, "pres": self.pressure, "humid": self.humidity}
-            if self.gas:
-                data["gas"] = self.gas
-            reporter.report("BME680", data)
+        self.report("CO2", {"co2_conc": self.conc})
 
-class ReportingFan(Fan):
+class ReportingWinsenCH2O(WinsenCH2O, ReportingMixIn):
     def __init__(self, pi, reporters):
-        super(ReportingFan, self).__init__(pi)
-        self.reporters = reporters
+        WinsenCH2O.__init__(self, pi)
+        ReportingMixIn.__init__(self, reporters)
+
+    def handle_good_packet(self):
+        self.report("CH2O", {"ch2o_conc": self.conc, "co2_full_range": self.full_range})
+
+class ReportingWinsenDust(WinsenDust, ReportingMixIn):
+    def __init__(self, pi, reporters):
+        WinsenDust.__init__(self, pi)
+        ReportingMixIn.__init__(self, reporters)
+
+    def handle_good_packet(self):
+        self.report("DUST", {"pm1.0": self.pm1p0, "pm2.5": self.pm2p5, "pm10": self.pm10})
+
+class ReportingBME680_TempHumidBarom(BME680_TempHumidBarom, ReportingMixIn):
+    def __init__(self, reporters):
+        BME680_TempHumidBarom.__init__(self)
+        ReportingMixIn.__init__(self, reporters)
+
+    def handle_good_packet(self):
+        data = {"temp": self.temperature, "pres": self.pressure, "humid": self.humidity}
+        if self.gas:
+            data["gas"] = self.gas
+        self.report("BME680", data)
+
+class ReportingFan(Fan, ReportingMixIn):
+    def __init__(self, pi, reporters):
+        Fan.__init__(self, pi)
+        ReportingMixIn.__init__(self, reporters)
 
     def report(self, rpm):
-        for reporter in self.reporters:
-            reporter.report("fan", {"rpm": int(rpm)})
+        self.report("fan", {"rpm": int(rpm)})
 
 def parse_args():
     parser = argparse.ArgumentParser()

@@ -93,7 +93,7 @@ class Fan(object):
         else:
             return 0
 
-    def report(self, rpm):
+    def report_rpm(self, rpm):
         pass
 
 class PulseStretcher(threading.Thread):
@@ -121,7 +121,7 @@ class PulseStretcher(threading.Thread):
             self.rpm = self.fan.get_fan_rpm()
             self.fan.disable_rpm()
             self.fan._set_pwm(self.fan.pwm)
-            self.fan.report(self.rpm)
+            self.fan.report_rpm(self.rpm)
 
             # perform a sampling every second
             time.sleep(1)
