@@ -6,6 +6,7 @@ if [ ! -f /etc/envmon/station ]; then
 fi
 
 FANPWM=200
+EXTRAARGS=
 if [ -f /etc/envmon/config ]; then
     source /etc/envmon/config
 fi
@@ -22,4 +23,6 @@ pkill -f envmond.py
 cd /home/pi/envmon
 STATION=`cat /etc/envmon/station`
 
-su - pi -c "bash -c \"cd /home/pi/envmon && nohup python /home/pi/envmon/envmond.py -S $STATION -v --rrd --udp 198.0.0.55:1234 --prometheus 8000 -F $FANPWM >> /tmp/envmond.log 2>&1 &\""
+LOG=/dev/null
+
+su - pi -c "bash -c \"cd /home/pi/envmon && nohup python /home/pi/envmon/envmond.py -S $STATION -v --rrd --udp 198.0.0.55:1234 --prometheus 8000 -F $FANPWM $EXTRAARGS >> $LOG 2>&1 &\""

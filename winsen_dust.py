@@ -155,6 +155,7 @@ class WinsenDust(threading.Thread):
         return count
             
     def run(self):
+        print "dust initialized"
         try:
             while True:
                 count = self.run_once()

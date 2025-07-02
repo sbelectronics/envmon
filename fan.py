@@ -7,19 +7,20 @@ FAN_PWM_PIN=4
 FAN_RPM_PIN=20
 
 class Fan(object):
-    def __init__(self, pi, pin=FAN_PWM_PIN, pin_rpm=FAN_RPM_PIN, weighting=0.1):
+    def __init__(self, pi, pin=FAN_PWM_PIN, pin_rpm=FAN_RPM_PIN, weighting=0.1, is_4pin=False, ppr=4):
         self.pi = pi
         self.pin = pin
         self.pin_rpm = pin_rpm
         self.pi.set_mode(self.pin, pigpio.OUTPUT)
         self.pi.set_PWM_frequency(self.pin, 20000)
+        self.is_4pin = is_4pin
         readback_f = self.pi.get_PWM_frequency(self.pin)
         if (readback_f != 20000):
             print "WARNING: Tried to set pwm freq of 20000 but received %d" % readback_f
         self.pwm = 0
         self._stretcher = None
         if (self.pin_rpm):
-            self.pulses_per_rev = 4
+            self.pulses_per_rev = ppr
             self._stretcher = PulseStretcher(self)
             self._new = 1.0 - weighting
             self._old = weighting
@@ -39,6 +40,12 @@ class Fan(object):
     def set_pwm(self,v):
         self._set_pwm(v)
         self.pwm = v
+
+    def set_4pin(self,v):
+        self.is_4pin = v
+
+    def set_ppr(self,v):
+        self.pulses_per_rev = v
 
     def _rpm_callback_handler(self, pin, level, tick):
         if not self._rpm_callback_enabled:
@@ -112,16 +119,25 @@ class PulseStretcher(threading.Thread):
 
     def run(self):
         while True:
-            self.fan._set_pwm(255)
-            # give it a little bit of settling time
-            time.sleep(0.002)
-            self.fan.enable_rpm()
-            # 6ms sampling period
-            time.sleep(0.006)
-            self.rpm = self.fan.get_fan_rpm()
-            self.fan.disable_rpm()
-            self.fan._set_pwm(self.fan.pwm)
-            self.fan.report_rpm(self.rpm)
+            if self.fan.is_4pin:
+                self.fan.enable_rpm()
+                # 50ms sampling period
+                # The noctuas only have 2 ticks per revolution, so we need a longer time than the other fan
+                time.sleep(0.050)
+                self.rpm = self.fan.get_fan_rpm()
+                self.fan.disable_rpm()
+                self.fan.report_rpm(self.rpm)
+            else:
+                self.fan._set_pwm(255)
+                # give it a little bit of settling time
+                time.sleep(0.002)
+                self.fan.enable_rpm()
+                # 6ms sampling period. keep it short because we stop pwming during this time
+                time.sleep(0.006)
+                self.rpm = self.fan.get_fan_rpm()
+                self.fan.disable_rpm()
+                self.fan._set_pwm(self.fan.pwm)
+                self.fan.report_rpm(self.rpm)
 
             # perform a sampling every second
             time.sleep(1)

@@ -1,14 +1,27 @@
+# enable i2c
+sudo raspi-config
+
+# install distutils
+sudo apt-get install python3-distutils python-pip
+
 # install pigpio
 rm -f pigpio.zip
-sudo rm -rf PIGPIO
-wget abyz.me.uk/rpi/pigpio/pigpio.zip
+sudo rm -rf pigpio-master
+#wget abyz.me.uk/rpi/pigpio/pigpio.zip
+wget https://github.com/joan2937/pigpio/archive/master.zip -O pigpio.zip
 unzip pigpio.zip
-cd PIGPIO
+cd pigpio-master
 make
 sudo make install
 
 # install adafruit bme680 library
 sudo pip install bme680
+
+# install prometheus client library
+sudo pip install prometheus_client
+
+# install smbus
+sudo apt-get -y install python-smbus
 
 sudo apt-get install rrdtool
 
@@ -22,3 +35,7 @@ sudo apt-get install git
 git clone https://github.com/commx/python-rrdtool.git
 cd python-rrdtool
 python ./setup.py install
+
+# autostart
+sudo crontab -e
+    @reboot bash /home/pi/envmon/start_envmond.sh &> /dev/null

@@ -44,7 +44,19 @@ class BME680_TempHumidBarom(threading.Thread):
                     self.gas = None
                 self.handle_packet()
             time.sleep(10)
-            
+
+class BME680_Fake(threading.Thread):
+    def __init__(self):
+        super(BME680_Fake, self).__init__()
+        self.daemon = True
+
+    def run(self):
+        while True:
+            self.temperature = 20
+            self.humidity = None
+            self.pressure = None
+            self.handle_good_packet()
+            time.sleep(10)        
         
 def main():
   thb = BME680_TempHumidBarom()

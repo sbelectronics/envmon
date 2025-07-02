@@ -7,7 +7,7 @@ import traceback
 from winsen_ch2o import WinsenCH2O
 from winsen_co2 import WinsenCO2
 from winsen_dust import WinsenDust
-from bme680_thb import BME680_TempHumidBarom
+from bme680_thb import BME680_TempHumidBarom, BME680_Fake
 from reporter import Reporter_Print, Reporter_RRD, Reporter_UDP, Reporter_Prometheus
 from fan import Fan
 
@@ -58,12 +58,21 @@ class ReportingBME680_TempHumidBarom(BME680_TempHumidBarom, ReportingMixIn):
             data["gas"] = self.gas
         self.report("BME680", data)
 
+class ReportingBME680_Fake(BME680_Fake, ReportingMixIn):
+    def __init__(self, reporters):
+        BME680_Fake.__init__(self)
+        ReportingMixIn.__init__(self, reporters)
+
+    def handle_good_packet(self):
+        data = {"temp": self.temperature}
+        self.report("BME680", data)        
+
 class ReportingFan(Fan, ReportingMixIn):
     def __init__(self, pi, reporters):
         Fan.__init__(self, pi)
         ReportingMixIn.__init__(self, reporters)
 
-    def report(self, rpm):
+    def report_rpm(self, rpm):
         self.report("fan", {"rpm": int(rpm)})
 
 def parse_args():
@@ -74,7 +83,9 @@ def parse_args():
             "console": False,
             "rrd": False,
             "prometheus": None,
-            "fan": 200}
+            "fan": 200,
+            "fan4pin": False,
+            "fanppr": 4}
 
     _help = 'Name of station (default: %s)' % defs['station']
     parser.add_argument(
@@ -110,6 +121,18 @@ def parse_args():
     parser.add_argument(
         '-F', '--fan', dest='fan', action='store', type=int,
         default=defs['fan'],
+        help=_help)
+    
+    _help = 'Set fan 4pin mode (default: %s)' % defs['fan4pin']
+    parser.add_argument(
+        '-4', '--fan4pin', dest='fan4pin', action='store_true',
+        default=defs['fan4pin'],
+        help=_help)
+    
+    _help = 'Set fan pulses per revolution (default: %s)' % defs['fan4pin']
+    parser.add_argument(
+        '-z', '--fanppr', dest='fanppr', action='store', type=int,
+        default=defs['fanppr'],
         help=_help)
 
     _help = "suppress debug and info logs"
@@ -154,6 +177,8 @@ def main():
 
     fan = ReportingFan(pi, reporters)
     fan.set_pwm(args.fan)
+    fan.set_4pin(args.fan4pin)
+    fan.set_ppr(args.fanppr)
 
     co2 = ReportingWinsenCO2(pi, reporters)
     co2.start()
@@ -164,8 +189,15 @@ def main():
     ch2o = ReportingWinsenCH2O(pi, reporters)
     ch2o.start()
 
-    bme = ReportingBME680_TempHumidBarom(reporters)
-    bme.start()
+    try:
+        bme = ReportingBME680_TempHumidBarom(reporters)
+        bme.start()
+    except:
+        print "Exception while initializing BME680"
+        traceback.print_exc()
+        # None of the other sensors will post until there's a "temp" every 10 seconds
+        bme = ReportingBME680_Fake(reporters)
+        bme.start()
 
     while True:
         time.sleep(1)
